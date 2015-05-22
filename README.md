@@ -1,5 +1,5 @@
-# PostTraisition
-PostTraisition for Cakephp3
+# PostTransition
+PostTransition for Cakephp3
 
 複数ページ遷移を簡単にpostで管理するプラグインです。
 
