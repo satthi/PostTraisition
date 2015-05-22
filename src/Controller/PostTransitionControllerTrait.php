@@ -6,6 +6,7 @@ use Cake\Utility\Security;
 use Cake\Utility\Hash;
 use Cake\Routing\Router;
 use Cake\Network\Exception\MethodNotAllowedException;
+use Cake\ORM\TableRegistry;
 
 trait PostTransitionControllerTrait
 {
@@ -24,10 +25,12 @@ trait PostTransitionControllerTrait
             $this->__default_settings,
             $settings
         );
+        
         if (empty($settings['model'])){
             $settings['model'] = $this->modelClass;
         }
-        $this->{$settings['model']} = $this->loadModel($settings['model']);
+
+        $model = TableRegistry::get($settings['model']);
         
         //初期アクセス時の対応
         if (!$this->request->is('post') && !$this->request->is('put')){
@@ -40,7 +43,7 @@ trait PostTransitionControllerTrait
             //セッションに空のデータを作成しておく
             
             //独自メソッド
-            $entity = $this->{$settings['model']}->newEntity($value);
+            $entity = $model->newEntity($value);
             $private_method = '__' . $settings['default']['post_setting'];
             if (method_exists($this, $private_method)){
                 $this->{$private_method}($entity);
@@ -83,8 +86,6 @@ trait PostTransitionControllerTrait
             //上部マッチで取っているはずだがもし流れた場合はエラー
             throw new MethodNotAllowedException();
         }
-        
-        //バリデーションの切り替え
 
         $readSession = $this->request->session()->read($settings['model'] . '.' . $this->request->data['hidden_key']);
 
@@ -94,7 +95,7 @@ trait PostTransitionControllerTrait
             $validate_option = $settings['post'][$readSession[$settings['nowField']]]['validate_option'];
         }
         
-        $entity = $this->{$settings['model']}->newEntity(
+        $entity = $model->newEntity(
             $this->request->data(), 
             //バリデーションの切り替えなど
             $validate_option
@@ -123,7 +124,7 @@ trait PostTransitionControllerTrait
         
         $this->request->session()->write($settings['model'] . '.' . $this->request->data['hidden_key'], $mergedData);
         
-        $entity = $this->{$settings['model']}->newEntity($mergedData);
+        $entity = $model->newEntity($mergedData);
         
         $private_method = '__' . $action[2];
         if (method_exists($this, $private_method)){
