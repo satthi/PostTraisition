@@ -32,6 +32,15 @@ trait PostTransitionControllerTrait
         
         $this->transitionModel = TableRegistry::get($this->__settings['model']);
         
+        //post_max_sizeオーバーのときのエラーチェック
+        //postでかつデータが空の時=>post_max_file_sizeオーバー時の対応
+        
+        if ($this->request->is('post') && empty($this->request->data)) {
+            //$this->Session->setFlash(sprintf(__('The %s has been saved'), $this->_topic_name));
+            $this->__sessionTimeout();
+        }
+        
+        
         //初期アクセス時の対応
         if (!$this->request->is('post') && !$this->request->is('put')){
             $this->__firstAction();
@@ -40,6 +49,7 @@ trait PostTransitionControllerTrait
         
         //セッション切れの処理
         if (!$this->request->session()->check($this->__settings['model'] . '.' . $this->request->data['hidden_key'])){
+            //$this->Session->setFlash(sprintf(__('The %s has been saved'), $this->_topic_name));
             return $this->__sessionTimeout();
         }
         
@@ -60,39 +70,43 @@ trait PostTransitionControllerTrait
             throw new MethodNotAllowedException();
         }
 
-        $readSession = $this->request->session()->read($this->__settings['model'] . '.' . $this->request->data['hidden_key']);
+        //$readSession = $this->request->session()->read($this->__settings['model'] . '.' . $this->request->data['hidden_key']);
+        
+        $entity_data = $this->request->session()->read($this->__settings['model'] . '.' . $this->request->data['hidden_key']);
+        $entity = $this->transitionModel->newEntity($entity_data);
 
         //何も設定がないときはdefaultを読む
         $validate_option = [];
-        if (array_key_exists('validate_option', $this->__settings['post'][$readSession[$this->__settings['nowField']]])){
-            $validate_option = $this->__settings['post'][$readSession[$this->__settings['nowField']]]['validate_option'];
+        if (array_key_exists('validate_option', $this->__settings['post'][$entity->{$this->__settings['nowField']}])){
+            $validate_option = $this->__settings['post'][$entity->{$this->__settings['nowField']}]['validate_option'];
         }
         
-        $entity = $this->transitionModel->newEntity(
-            $this->request->data(), 
-            //バリデーションの切り替えなど
-            $validate_option
-        );
+       
+        $entity = $this->transitionModel->patchEntity($entity, $this->request->data(), $validate_option);
         
         if (
             $action[1] == $this->__settings['nextPrefix'] &&
             $entity->errors()
         ){
-            $this->_viewRender($entity, $readSession[$this->__settings['nowField']]);
+            $entity_data = $entity->toArray();
+            $this->request->session()->write($this->__settings['model'] . '.' . $this->request->data['hidden_key'], $entity_data);
+            
+            $this->_viewRender($entity, $entity->{$this->__settings['nowField']});
             
             return;
         }
         
-        //バリデーションを通過したらセッションにあるデータも書き込む
         $mergedData = array_merge(
-            $readSession,
             $this->request->data,
             [$this->__settings['nowField'] => $action[2]]
         );
         
-        $this->request->session()->write($this->__settings['model'] . '.' . $this->request->data['hidden_key'], $mergedData);
+        $entity = $this->transitionModel->patchEntity($entity, $mergedData);
         
-        $entity = $this->transitionModel->newEntity($mergedData);
+        $entity_data = $entity->toArray();
+        //r($entity_data);
+        //exit;
+        $this->request->session()->write($this->__settings['model'] . '.' . $this->request->data['hidden_key'], $entity_data);
         
         $this->_viewRender($entity, $action[2]);
         
@@ -108,6 +122,7 @@ trait PostTransitionControllerTrait
         
         $this->set(compact('entity'));
         if ($this->__settings['post'][$action]['render'] !== false){
+        	session_write_close();
             $this->render($this->__settings['post'][$action]['render']);
         }
         return;
@@ -157,14 +172,14 @@ trait PostTransitionControllerTrait
         }
         
         //セッションに空のデータを作成しておく
-        $now = $this->__settings['default']['post_setting'];
-        $this->request->session()->write($this->__settings['model'] . '.' . $hidden_key, [$this->__settings['nowField'] => $now]);
+        $entity->{$this->__settings['nowField']} = $this->__settings['default']['post_setting'];
+        $entity_data = $entity->toArray();
+        $this->request->session()->write($this->__settings['model'] . '.' . $hidden_key, $entity_data);
         
         $this->_viewRender($entity, $this->__settings['default']['post_setting']);
     }
     
     private function __sessionTimeout(){
-        $this->__sessionTimeout();
         //最初に戻る
         if (!empty($this->__settings['start_action'])){
             $start_action = $this->__settings['start_action'];
