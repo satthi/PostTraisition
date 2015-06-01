@@ -1,0 +1,33 @@
+{
+    "name": "satthi/post-transition",
+    "description": "CakePHP PostTransition",
+    "type": "cakephp-plugin",
+    "keywords": ["cakephp", "transition"],
+    "homepage": "https://github.com/satthi/PostTransition",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Satoru Hagiwara",
+            "role": "Author"
+        }
+    ],
+    "support": {
+        "source": "https://github.com/satthi/PostTransition"
+    },
+    "require": {
+        "cakephp/cakephp": "~3.0"
+    },
+    "require-dev": {
+    },
+    "autoload": {
+        "psr-4": {
+            "PostTransition\\": "src"
+        }
+    },
+    "autoload-dev": {
+    },
+    "suggest": {
+    },
+    "extra": {
+    }
+}
