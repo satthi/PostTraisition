@@ -36,7 +36,7 @@ trait PostTransitionControllerTrait
         //postでかつデータが空の時=>post_max_file_sizeオーバー時の対応
         
         if ($this->request->is('post') && empty($this->request->data)) {
-            //$this->Session->setFlash(sprintf(__('The %s has been saved'), $this->_topic_name));
+            $this->Flash->error(__d('post_transition', 'Post max size error.'));
             $this->__sessionTimeout();
         }
         
@@ -49,7 +49,7 @@ trait PostTransitionControllerTrait
         
         //セッション切れの処理
         if (!$this->request->session()->check($this->__settings['model'] . '.' . $this->request->data['hidden_key'])){
-            //$this->Session->setFlash(sprintf(__('The %s has been saved'), $this->_topic_name));
+            $this->Flash->error(__d('post_transition', 'Session Timeout.'));
             return $this->__sessionTimeout();
         }
         
@@ -70,8 +70,6 @@ trait PostTransitionControllerTrait
             throw new MethodNotAllowedException();
         }
 
-        //$readSession = $this->request->session()->read($this->__settings['model'] . '.' . $this->request->data['hidden_key']);
-        
         $entity_data = $this->request->session()->read($this->__settings['model'] . '.' . $this->request->data['hidden_key']);
         $entity = $this->transitionModel->newEntity($entity_data);
 
@@ -88,6 +86,8 @@ trait PostTransitionControllerTrait
             $action[1] == $this->__settings['nextPrefix'] &&
             $entity->errors()
         ){
+            $this->Flash->error(__d('post_transition', 'Validation could not pass.'));
+            
             $entity_data = $entity->toArray();
             $this->request->session()->write($this->__settings['model'] . '.' . $this->request->data['hidden_key'], $entity_data);
             
@@ -104,8 +104,7 @@ trait PostTransitionControllerTrait
         $entity = $this->transitionModel->patchEntity($entity, $mergedData);
         
         $entity_data = $entity->toArray();
-        //r($entity_data);
-        //exit;
+
         $this->request->session()->write($this->__settings['model'] . '.' . $this->request->data['hidden_key'], $entity_data);
         
         $this->_viewRender($entity, $action[2]);
@@ -122,7 +121,6 @@ trait PostTransitionControllerTrait
         
         $this->set(compact('entity'));
         if ($this->__settings['post'][$action]['render'] !== false){
-        	session_write_close();
             $this->render($this->__settings['post'][$action]['render']);
         }
         return;
