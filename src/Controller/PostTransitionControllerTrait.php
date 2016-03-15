@@ -73,10 +73,15 @@ trait PostTransitionControllerTrait
         $entity_data = $this->request->session()->read($this->__settings['model'] . '.' . $this->request->data['hidden_key']);
         $entity = $this->transitionModel->newEntity($entity_data);
 
+        if (!empty($this->request->data[$this->__settings['nowField']])) {
+            $nowField = $this->request->data[$this->__settings['nowField']];
+        } else {
+            $nowField = $entity->{$this->__settings['nowField']};
+        }
         //何も設定がないときはdefaultを読む
         $validate_option = [];
-        if (array_key_exists('validate_option', $this->__settings['post'][$entity->{$this->__settings['nowField']}])){
-            $validate_option = $this->__settings['post'][$entity->{$this->__settings['nowField']}]['validate_option'];
+        if (array_key_exists('validate_option', $this->__settings['post'][$nowField])){
+            $validate_option = $this->__settings['post'][$nowField]['validate_option'];
         }
         
        
@@ -119,6 +124,8 @@ trait PostTransitionControllerTrait
             $this->{$private_method}($entity);
         }
         
+        //viewのnowに現在の画面の値をセットする
+        $entity->{$this->__settings['nowField']} = $action;
         $this->set(compact('entity'));
         if ($this->__settings['post'][$action]['render'] !== false){
             $this->render($this->__settings['post'][$action]['render']);

@@ -98,6 +98,7 @@ hoge4:<?= $entity->hoge4;?><br />
 
 <?= $this->Form->input('hoge1',['required' => false]);?>
 <?= $this->Form->input('hidden_key');?>
+<?= $this->Form->input('now');?>
 
 <?php //押すと、index1のバリデーションがかかった後index2.ctpが表示?>
 <?= $this->Form->submit('submit', ['name' => 'next_index2']);?>
@@ -113,6 +114,7 @@ hoge1:<?= $entity->hoge1;?>
 
 <?= $this->Form->input('hoge2',['required' => false]);?>
 <?= $this->Form->input('hidden_key');?>
+<?= $this->Form->input('now');?>
 
 <?php //バリデーションをかけず画面1に戻る?>
 <?= $this->Form->submit('back', ['name' => 'back_index1']);?>
@@ -130,6 +132,7 @@ hoge2:<?= $entity->hoge2;?><br />
 
 <?= $this->Form->input('hoge3',['required' => false]);?>
 <?= $this->Form->input('hidden_key');?>
+<?= $this->Form->input('now');?>
 
 <?php //バリデーションをかけず画面1に戻る?>
 <?= $this->Form->submit('back1', ['name' => 'back_index1']);?>
