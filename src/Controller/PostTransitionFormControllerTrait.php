@@ -6,6 +6,7 @@ use Cake\Utility\Security;
 use Cake\Utility\Hash;
 use Cake\Routing\Router;
 use Cake\Network\Exception\MethodNotAllowedException;
+use Cake\Validation\Validator;
 
 trait PostTransitionFormControllerTrait
 {
@@ -75,8 +76,11 @@ trait PostTransitionFormControllerTrait
         //何も設定がないときはdefaultを読む
         $validate_option = [];
         if (array_key_exists('validate_option', $this->__settings['post'][$this->request->data[$this->__settings['nowField']]])){
-            $validate_option = $this->__settings['post'][$this->request->data[$this->__settings['nowField']]]['validate_option'];
+            $validate_option = $this->__settings['post'][$this->request->data[$this->__settings['nowField']]]['validate_option']['validate'];
+            $validationMethod = 'validation' . $validate_option;
+            $this->transitionModel->validator($this->transitionModel->{$validationMethod}(new Validator()));
         }
+
         if (
             $action[1] == $this->__settings['nextPrefix'] &&
             !$this->transitionModel->validate($this->request->data)
@@ -107,7 +111,9 @@ trait PostTransitionFormControllerTrait
         if (method_exists($this, $private_method)){
             $this->{$private_method}($data, $param);
         }
-        
+        //viewのnowに現在の画面の値をセットする
+        $this->request->data[$this->__settings['nowField']] = $action;
+
         if (!empty($this->transitionModel->errors())){
             $this->transitionModel->setErrors = $this->transitionModel->errors();
         }
