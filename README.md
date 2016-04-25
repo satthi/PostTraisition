@@ -49,6 +49,8 @@ class TopicsController extends AppController
                 //初期画面の設定はpost配列内のどの設定か
                 'post_setting' => 'index1',
             ],
+            //privateの第二引数に特定の値を引き渡す
+            'param' => [],
             //post時の設定
             'post' => [
                 //key値は、ボタン名や独自メソッドへのアクセスに使用
@@ -76,12 +78,12 @@ class TopicsController extends AppController
     }
     
     //index1の画面描画前(entityセット直前でフック)
-    private function __index1($entity){
+    private function __index1($entity, $param){
        $entity->hoge4 = 'are';
     }
     
     //save処理
-    private function __save($entity){
+    private function __save($entity, $param){
         debug($entity);
         //save 処理
         exit;
