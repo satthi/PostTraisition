@@ -94,8 +94,11 @@ trait PostTransitionControllerTrait
         ){
             $this->Flash->error(__d('post_transition', 'Validation could not pass.'));
             
-            $entity_data = $entity->toArray();
-            $this->request->session()->write($this->__settings['model'] . '.' . $this->request->data['hidden_key'], $entity_data);
+            $mergedData = array_merge(
+                $entity_data,
+                $this->request->data()
+            );
+            $this->request->session()->write($this->__settings['model'] . '.' . $this->request->data['hidden_key'], $mergedData);
             
             $this->_viewRender($entity, $entity->{$this->__settings['nowField']}, $this->__settings['param']);
             
@@ -109,9 +112,12 @@ trait PostTransitionControllerTrait
         
         $entity = $this->transitionModel->patchEntity($entity, $mergedData);
         
-        $entity_data = $entity->toArray();
+        $mergedData = array_merge(
+            $entity_data,
+            $mergedData
+        );
 
-        $this->request->session()->write($this->__settings['model'] . '.' . $this->request->data['hidden_key'], $entity_data);
+        $this->request->session()->write($this->__settings['model'] . '.' . $this->request->data['hidden_key'], $mergedData);
         
         $this->_viewRender($entity, $action[2], $this->__settings['param']);
         
@@ -169,6 +175,7 @@ trait PostTransitionControllerTrait
         if (is_object($this->__settings['default']['value'])){
             $entity = $this->__settings['default']['value'];
             $entity->hidden_key = $hidden_key;
+            $value = $entity->toArray();
         } else {
             $value = array_merge(
                 $this->__settings['default']['value'],
@@ -179,8 +186,9 @@ trait PostTransitionControllerTrait
         
         //セッションに空のデータを作成しておく
         $entity->{$this->__settings['nowField']} = $this->__settings['default']['post_setting'];
-        $entity_data = $entity->toArray();
-        $this->request->session()->write($this->__settings['model'] . '.' . $hidden_key, $entity_data);
+        $value[$this->__settings['nowField']] = $this->__settings['default']['post_setting'];
+
+        $this->request->session()->write($this->__settings['model'] . '.' . $hidden_key, $value);
         
         $this->_viewRender($entity, $this->__settings['default']['post_setting'], $this->__settings['param']);
     }
