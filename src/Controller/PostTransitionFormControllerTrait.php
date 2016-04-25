@@ -17,6 +17,7 @@ trait PostTransitionFormControllerTrait
             'value' => [],
         ],
         'post' => [],
+        'param' => [],
     ];
     private $__settings;
     public $transitionModel;
@@ -84,7 +85,7 @@ trait PostTransitionFormControllerTrait
             
             $this->request->session()->write('Contact.' . $this->request->data['hidden_key'], $this->request->data);
             
-            $this->_viewRender($this->request->data, $this->request->data[$this->__settings['nowField']]);
+            $this->_viewRender($this->request->data, $this->request->data[$this->__settings['nowField']], $this->__settings['param']);
             
             return;
         }
@@ -95,16 +96,16 @@ trait PostTransitionFormControllerTrait
 
         $this->request->session()->write('Contact.' . $this->request->data['hidden_key'], $this->request->data);
         
-        $this->_viewRender($this->request->data, $action[2]);
+        $this->_viewRender($this->request->data, $action[2], $this->__settings['param']);
         
         return;
     }
     
-    protected function _viewRender($data, $action){
+    protected function _viewRender($data, $action, $param){
         
         $private_method = $this->__settings['post'][$action]['private'];
         if (method_exists($this, $private_method)){
-            $this->{$private_method}($data);
+            $this->{$private_method}($data, $param);
         }
         
         if (!empty($this->transitionModel->errors())){
@@ -168,7 +169,7 @@ trait PostTransitionFormControllerTrait
 
         $this->request->session()->write('Contact.' . $hidden_key, $this->request->data);
         
-        $this->_viewRender($this->request->data, $this->__settings['default']['post_setting']);
+        $this->_viewRender($this->request->data, $this->__settings['default']['post_setting'], $this->__settings['param']);
     }
     
     private function __sessionTimeout(){

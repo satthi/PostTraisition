@@ -18,6 +18,7 @@ trait PostTransitionControllerTrait
             'value' => [],
         ],
         'post' => [],
+        'param' => [],
     ];
     private $__settings;
     public $transitionModel;
@@ -96,7 +97,7 @@ trait PostTransitionControllerTrait
             $entity_data = $entity->toArray();
             $this->request->session()->write($this->__settings['model'] . '.' . $this->request->data['hidden_key'], $entity_data);
             
-            $this->_viewRender($entity, $entity->{$this->__settings['nowField']});
+            $this->_viewRender($entity, $entity->{$this->__settings['nowField']}, $this->__settings['param']);
             
             return;
         }
@@ -112,16 +113,16 @@ trait PostTransitionControllerTrait
 
         $this->request->session()->write($this->__settings['model'] . '.' . $this->request->data['hidden_key'], $entity_data);
         
-        $this->_viewRender($entity, $action[2]);
+        $this->_viewRender($entity, $action[2], $this->__settings['param']);
         
         return;
     }
     
-    protected function _viewRender($entity, $action){
+    protected function _viewRender($entity, $action, $param){
         
         $private_method = $this->__settings['post'][$action]['private'];
         if (method_exists($this, $private_method)){
-            $this->{$private_method}($entity);
+            $this->{$private_method}($entity, $param);
         }
         
         //viewのnowに現在の画面の値をセットする
@@ -181,7 +182,7 @@ trait PostTransitionControllerTrait
         $entity_data = $entity->toArray();
         $this->request->session()->write($this->__settings['model'] . '.' . $hidden_key, $entity_data);
         
-        $this->_viewRender($entity, $this->__settings['default']['post_setting']);
+        $this->_viewRender($entity, $this->__settings['default']['post_setting'], $this->__settings['param']);
     }
     
     private function __sessionTimeout(){
