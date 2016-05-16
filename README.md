@@ -52,7 +52,7 @@ class TopicsController extends AppController
                 //初期画面の設定はpost配列内のどの設定か
                 'post_setting' => 'index1',
             ],
-            //privateの第二引数に特定の値を引き渡す
+            //privateの第三引数に特定の値を引き渡す
             'param' => [],
             //post時の設定
             'post' => [
@@ -81,14 +81,24 @@ class TopicsController extends AppController
     }
     
     //index1の画面描画前(entityセット直前でフック)
-    private function __index1($entity, $param){
+    private function __index1($entity, $data, $param){
        $entity->hoge4 = 'are';
     }
     
     //save処理
-    private function __save($entity, $param){
+    /*
+     * $entity $this->Form->createにsetするためのEntity validationを通過した際にはsetが走っていないEntity
+     * $data 保存処理などに利用するためのデータの配列。$entityはsetが走っていないため、別途newEntityをして保存する
+     * $param 設定値で引き渡すと設定した値
+     */
+    private function __save($entity, $data, $param){
         debug($entity);
-        //save 処理
+        debug($data);
+        //save 処理においては配列データを使用してEntityを走らせたい
+        $saveEntity = $this->Topics->newEntity($data);
+        if ($this->Topics->save($saveEntity)){
+            //
+        }
     }
 }
 ```
