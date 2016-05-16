@@ -26,7 +26,6 @@ trait PostTransitionControllerTrait
     private function __postTransition($settings){
         //設定値の設定
         $this->__postSettingAdjustment($settings);
-        
         if (empty($this->__settings['model'])){
             $this->__settings['model'] = $this->modelClass;
         }
@@ -35,12 +34,10 @@ trait PostTransitionControllerTrait
         
         //post_max_sizeオーバーのときのエラーチェック
         //postでかつデータが空の時=>post_max_file_sizeオーバー時の対応
-        
         if ($this->request->is('post') && empty($this->request->data)) {
             $this->Flash->error(__d('post_transition', 'Post max size error.'));
             $this->__sessionTimeout();
         }
-        
         
         //初期アクセス時の対応
         if (!$this->request->is('post') && !$this->request->is('put')){
@@ -72,63 +69,59 @@ trait PostTransitionControllerTrait
         }
 
         $entity_data = $this->request->session()->read($this->__settings['model'] . '.' . $this->request->data['hidden_key']);
-        $entity = $this->transitionModel->newEntity($entity_data);
-
-        if (!empty($this->request->data[$this->__settings['nowField']])) {
-            $nowField = $this->request->data[$this->__settings['nowField']];
-        } else {
-            $nowField = $entity->{$this->__settings['nowField']};
+        
+        //必要なパラメータがpostされているかのチェック
+        if (!array_key_exists($this->__settings['nowField'], $this->request->data)){
+            throw new MethodNotAllowedException();
         }
-        //何も設定がないときはdefaultを読む
+        $nowField = $this->request->data[$this->__settings['nowField']];
+        
         $validate_option = [];
         if (array_key_exists('validate_option', $this->__settings['post'][$nowField])){
             $validate_option = $this->__settings['post'][$nowField]['validate_option'];
         }
         
-       
-        $entity = $this->transitionModel->patchEntity($entity, $this->request->data(), $validate_option);
+        $mergedData = array_merge(
+            $entity_data,
+            $this->request->data()
+        );
+        
+        $entity = $this->transitionModel->newEntity($mergedData, $validate_option);
         
         if (
             $action[1] == $this->__settings['nextPrefix'] &&
             $entity->errors()
         ){
             $this->Flash->error(__d('post_transition', 'Validation could not pass.'));
-            
-            $mergedData = array_merge(
-                $entity_data,
-                $this->request->data()
-            );
             $this->request->session()->write($this->__settings['model'] . '.' . $this->request->data['hidden_key'], $mergedData);
             
-            $this->_viewRender($entity, $entity->{$this->__settings['nowField']}, $this->__settings['param']);
-            
+            $this->_viewRender($entity, $mergedData, $entity->{$this->__settings['nowField']}, $this->__settings['param']);
             return;
         }
         
+        unset($this->request->data['now']);
         $mergedData = array_merge(
-            $this->request->data,
+            $mergedData,
             [$this->__settings['nowField'] => $action[2]]
         );
         
-        $entity = $this->transitionModel->patchEntity($entity, $mergedData);
-        
-        $mergedData = array_merge(
-            $entity_data,
-            $mergedData
-        );
+        // エラーを通り抜けた際には、useSetter => falseのデータを引き渡す
+        $entity = $this->__setterFalseEntityData($mergedData);
+        $entity->now = $action[2];
 
         $this->request->session()->write($this->__settings['model'] . '.' . $this->request->data['hidden_key'], $mergedData);
         
-        $this->_viewRender($entity, $action[2], $this->__settings['param']);
+        //postデータ自体が残っていると動作に不都合があるため
+        unset($this->request->data['now']);
+        $this->_viewRender($entity, $mergedData, $action[2], $this->__settings['param']);
         
         return;
     }
     
-    protected function _viewRender($entity, $action, $param){
-        
+    protected function _viewRender($entity, $data, $action, $param){
         $private_method = $this->__settings['post'][$action]['private'];
         if (method_exists($this, $private_method)){
-            $this->{$private_method}($entity, $param);
+            $this->{$private_method}($entity, $data, $param);
         }
         
         //viewのnowに現在の画面の値をセットする
@@ -167,7 +160,6 @@ trait PostTransitionControllerTrait
                 }
             }
         }
-        
     }
     
     private function __firstAction(){
@@ -181,7 +173,8 @@ trait PostTransitionControllerTrait
                 $this->__settings['default']['value'],
                 ['hidden_key' => $hidden_key]
             );
-            $entity = $this->transitionModel->newEntity($value);
+            
+            $entity = $this->__setterFalseEntityData($value);
         }
         
         //セッションに空のデータを作成しておく
@@ -190,7 +183,7 @@ trait PostTransitionControllerTrait
 
         $this->request->session()->write($this->__settings['model'] . '.' . $hidden_key, $value);
         
-        $this->_viewRender($entity, $this->__settings['default']['post_setting'], $this->__settings['param']);
+        $this->_viewRender($entity, $value, $this->__settings['default']['post_setting'], $this->__settings['param']);
     }
     
     private function __sessionTimeout(){
@@ -203,5 +196,12 @@ trait PostTransitionControllerTrait
             $start_action = Router::fullBaseUrl() . $this->request->here;
         }
         return $this->redirect($start_action);
+    }
+    
+    private function __setterFalseEntityData($data) {
+        //src\ORM\Table 2013行目付近参照
+        $newEntityClass = $this->transitionModel->entityClass();
+        //useSetters falseをセットすることでフォームにセットする値についてsetterを発動させない
+        return new $newEntityClass($data, ['source' => $this->transitionModel->registryAlias(), 'useSetters' => false]);
     }
 }
